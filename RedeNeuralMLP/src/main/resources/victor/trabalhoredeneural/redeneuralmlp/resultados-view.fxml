@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox prefHeight="600.0" prefWidth="800.0" spacing="10.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="victor.trabalhoredeneural.redeneuralmlp.ResultadosController">
+    <padding>
+        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+    </padding>
+    <children>
+        <Label text="Resultados do Treinamento">
+            <font>
+                <Font name="System Bold" size="18.0" />
+            </font>
+        </Label>
+        <HBox spacing="20.0">
+            <children>
+                <Label text="Épocas Executadas:" />
+                <Label fx:id="lblEpocas" text="-" />
+            </children>
+        </HBox>
+        <HBox spacing="20.0">
+            <children>
+                <Label text="Erro Final da Rede:" />
+                <Label fx:id="lblErroFinal" text="-" />
+            </children>
+        </HBox>
+        <Label text="Matriz de Confusão (Linhas: Real, Colunas: Predito)">
+            <font>
+                <Font name="System Bold" size="14.0" />
+            </font>
+            <VBox.margin>
+                <Insets top="10.0" />
+            </VBox.margin>
+        </Label>
+        <TableView fx:id="tabelaMatriz" prefHeight="200.0" prefWidth="200.0">
+            <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+            </columnResizePolicy>
+        </TableView>
+        <Label text="Erro Médio por Época">
+            <font>
+                <Font name="System Bold" size="14.0" />
+            </font>
+            <VBox.margin>
+                <Insets top="10.0" />
+            </VBox.margin>
+        </Label>
+        <LineChart fx:id="graficoErro" animated="false" VBox.vgrow="ALWAYS">
+            <xAxis>
+                <CategoryAxis label="Época" />
+            </xAxis>
+            <yAxis>
+                <NumberAxis label="Erro Médio" />
+            </yAxis>
+        </LineChart>
+    </children>
+</VBox>

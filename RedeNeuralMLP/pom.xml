@@ -61,7 +61,7 @@
                         <id>default-cli</id>
                         <configuration>
                             <mainClass>
-                                victor.trabalhoredeneural.redeneuralmlp/victor.trabalhoredeneural.redeneuralmlp.HelloApplication
+                                victor.trabalhoredeneural.redeneuralmlp/victor.trabalhoredeneural.redeneuralmlp.MainApplication
                             </mainClass>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>
