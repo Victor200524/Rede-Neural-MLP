@@ -11,7 +11,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
-import javafx.util.Pair; // Import para o Pair
+import javafx.util.Pair;
 
 // Imports da lógica
 import victor.trabalhoredeneural.redeneuralmlp.core.FuncaoAtivacao;
@@ -25,15 +25,12 @@ import victor.trabalhoredeneural.redeneuralmlp.util.LeitorCSV;
 import java.io.File;
 import java.io.IOException;
 import java.util.*; // Import para List, Collections, etc.
-import java.util.concurrent.ExecutionException;
 
 // Import da Task
 import javafx.concurrent.Task;
 
-
 public class MainController {
 
-    // --- Variáveis de Configuração da Rede (ligadas ao FXML) ---
     @FXML
     private TextField txtEntrada;
     @FXML
@@ -55,7 +52,6 @@ public class MainController {
     @FXML
     private RadioButton radioHiperbolica;
 
-    // --- Variáveis de Carregamento de Arquivo (ligadas ao FXML) ---
     @FXML
     private CheckBox checkArquivoUnico;
     @FXML
@@ -83,19 +79,16 @@ public class MainController {
     @FXML
     private TableColumn<Instancia, String> colClasse;
 
-    // --- Botão de Ação ---
     @FXML
     private Button btnIniciar;
 
-    // --- Variáveis de Lógica ---
-    // Agora guardam os arquivos carregados
+    // Guarda os arquivos carregados
     private ConjuntoDados dadosCarregadoPrincipal;
     private ConjuntoDados dadosCarregadoTeste;
 
-    // Variável para guardar o CONTROLLER da janela de treinamento
+    // Variável para guardar o controller da janela de treinamento
     private TreinamentoController treinamentoController;
     private Stage janelaTreinamento;
-
 
     @FXML
     public void initialize() {
@@ -114,7 +107,6 @@ public class MainController {
     @FXML
     protected void onCheckArquivoUnicoClick() {
         boolean selecionado = checkArquivoUnico.isSelected();
-
         // Desabilita o botão de teste se selecionado
         btnCarregarTeste.setDisable(selecionado);
 
@@ -127,7 +119,6 @@ public class MainController {
             lblArquivoPrincipal.setText("Nenhum arquivo de treino carregado.");
             lblArquivoTeste.setText("Nenhum arquivo de teste carregado.");
         }
-
         // Reseta os dados carregados ao mudar de modo
         dadosCarregadoPrincipal = null;
         dadosCarregadoTeste = null;
@@ -142,7 +133,6 @@ public class MainController {
             try {
                 dadosCarregadoPrincipal = LeitorCSV.carregarDados(arquivo);
                 lblArquivoPrincipal.setText(arquivo.getName());
-
                 // Popula campos e tabela
                 txtEntrada.setText(String.valueOf(dadosCarregadoPrincipal.getNumeroDeAtributos()));
                 txtSaida.setText(String.valueOf(dadosCarregadoPrincipal.getNumeroDeClasses()));
@@ -171,17 +161,20 @@ public class MainController {
         verificarSePodeIniciar();
     }
 
-    /**
-     * MÉTODO PRINCIPAL - Chamado ao clicar em "Iniciar Treinamento"
-     */
+    // Inicia o treinamento
     @FXML
     protected void onIniciarTreinamentoClick() {
-        // --- 1. Validação dos Parâmetros da UI ---
-        int epocas, numOculta;
-        double erroDesejado, taxaAprendizado;
+        // Validação dos Parâmetros da UI
+        int epocas = 0; // Inicializa com 0
+        int numOculta = 0; // Inicializa com 0
+        double erroDesejado = 0.0; // Inicializa com 0.0
+        double taxaAprendizado = 0.0; // Inicializa com 0.0
+
+        // Flag para controlar se a validação passou
+        boolean parametrosValidos = true;
 
         try {
-            // (Validação dos campos de texto, igual a antes)
+            // Validação dos campos de texto, igual a antes
             epocas = Integer.parseInt(txtEpocas.getText());
             erroDesejado = Double.parseDouble(txtErro.getText());
             taxaAprendizado = Double.parseDouble(txtTaxaAprendizado.getText());
@@ -189,144 +182,154 @@ public class MainController {
 
             if (taxaAprendizado <= 0 || taxaAprendizado > 1) {
                 exibirAlertaErro("Parâmetro Inválido", "A Taxa de Aprendizado (N) deve ser > 0 e <= 1.");
-                return;
+                parametrosValidos = false; // Define a flag como falsa
             }
+
             if (numOculta <= 0 || epocas <= 0) {
-                exibirAlertaErro("Parâmetro Inválido", "Épocas e Camada Oculta devem ser maiores que 0.");
-                return;
+                // Checa se a flag anterior já não foi acionada
+                if (parametrosValidos) {
+                    exibirAlertaErro("Parâmetro Inválido", "Épocas e Camada Oculta devem ser maiores que 0.");
+                    parametrosValidos = false; // Define a flag como falsa
+                }
             }
         } catch (NumberFormatException e) {
             exibirAlertaErro("Parâmetro Inválido", "Verifique os valores de Épocas, Erro, Taxa e Camada Oculta. Devem ser números.");
-            return;
+            parametrosValidos = false; // Define a flag como falsa
         }
 
-        // Pega a função de ativação selecionada
-        FuncaoAtivacao funcao = FuncaoAtivacao.getFuncaoSelecionada(radioLinear, radioLogistica, radioHiperbolica);
+        // Somente executa o restante do código se a flag for verdadeira
+        if (parametrosValidos) {
+            // Pega a função de ativação selecionada
+            FuncaoAtivacao funcao = FuncaoAtivacao.getFuncaoSelecionada(radioLinear, radioLogistica, radioHiperbolica);
 
-        // --- 2. PREPARAR OS CONJUNTOS DE DADOS (NOVO) ---
-        final ConjuntoDados dadosTreinoFinal;
-        final ConjuntoDados dadosTesteFinal;
+            // Prepara os conjuntos de dados
+            final ConjuntoDados dadosTreinoFinal;
+            final ConjuntoDados dadosTesteFinal;
 
-        if (checkArquivoUnico.isSelected()) {
-            // Modo Arquivo Único: Dividir o 'dadosCarregadoPrincipal'
-            // Usamos 70% para treino
-            Pair<ConjuntoDados, ConjuntoDados> datasets = splitDataSet(dadosCarregadoPrincipal, 0.7);
-            dadosTreinoFinal = datasets.getKey();
-            dadosTesteFinal = datasets.getValue();
+            if (checkArquivoUnico.isSelected()) {
+                // Modo Arquivo Único: Dividir o 'dadosCarregadoPrincipal'
+                // Usamos 70% para treino
+                Pair<ConjuntoDados, ConjuntoDados> datasets = splitDataSet(dadosCarregadoPrincipal, 0.7);
+                dadosTreinoFinal = datasets.getKey();
+                dadosTesteFinal = datasets.getValue();
 
-            System.out.println("Dividindo arquivo único:");
-            System.out.println("Instâncias de Treino: " + dadosTreinoFinal.getInstancias().size());
-            System.out.println("Instâncias de Teste: " + dadosTesteFinal.getInstancias().size());
-        } else {
-            // Modo Dois Arquivos: Apenas usa os dados carregados
-            dadosTreinoFinal = dadosCarregadoPrincipal;
-            dadosTesteFinal = dadosCarregadoTeste;
-        }
-
-        // --- 3. Criação da TAREFA (Task) de Treinamento ---
-        Task<ResultadoTreinamento> tarefaTreinamento = new Task<>() {
-            @Override
-            protected ResultadoTreinamento call() throws Exception {
-                // --- INÍCIO DA EXECUÇÃO NA THREAD DE BACKGROUND ---
-
-                double taxaAprendizadoAtual = taxaAprendizado;
-
-                // 1. Instanciar a Rede Neural
-                RedeNeural rede = new RedeNeural(
-                        dadosTreinoFinal.getNumeroDeAtributos(), // Usa o 'Final'
-                        numOculta,
-                        dadosTreinoFinal.getNumeroDeClasses(), // Usa o 'Final'
-                        funcao,
-                        taxaAprendizadoAtual,
-                        dadosTreinoFinal // Passa o 'Final' (ele contém o Min/Max correto)
-                );
-
-                // 2. Loop de Treinamento (Épocas)
-                int epocaAtual = 0;
-                double erroEpoca = 1.0;
-                List<Instancia> instanciasTreino = new ArrayList<>(dadosTreinoFinal.getInstancias()); // Usa o 'Final'
-                List<Double> historicoErros = new ArrayList<>();
-
-                LinkedList<Double> ultimosErros = new LinkedList<>();
-                final int TAMANHO_JANELA_PLATO = 10;
-                final double LIMIAR_PLATO = 0.00001;
-
-                while (epocaAtual < epocas && erroEpoca > erroDesejado) {
-
-                    Collections.shuffle(instanciasTreino);
-                    double somaErrosQuadradicos = 0.0;
-                    for (Instancia inst : instanciasTreino) {
-                        List<Double> entradasNormalizadas = rede.normalizar(inst.getEntradas());
-                        List<Double> vetorAlvo = rede.getVetorAlvo(inst.getClasse());
-                        List<Double> saidasRede = rede.feedforward(entradasNormalizadas);
-                        rede.backpropagation(entradasNormalizadas, vetorAlvo);
-                        for (int i = 0; i < vetorAlvo.size(); i++) {
-                            double erro = vetorAlvo.get(i) - saidasRede.get(i);
-                            somaErrosQuadradicos += 0.5 * (erro * erro);
-                        }
-                    }
-
-                    epocaAtual++;
-                    erroEpoca = somaErrosQuadradicos / instanciasTreino.size();
-                    historicoErros.add(erroEpoca);
-
-                    // 3. ATUALIZAR A UI DE TREINAMENTO
-                    treinamentoController.atualizarStatus(epocaAtual, erroEpoca);
-
-                    // 4. LÓGICA DE DETECÇÃO DE PLATÔ
-                    ultimosErros.add(erroEpoca);
-                    if (ultimosErros.size() > TAMANHO_JANELA_PLATO) ultimosErros.removeFirst();
-
-                    if (ultimosErros.size() == TAMANHO_JANELA_PLATO) {
-                        double desvioPadrao = calcularDesvioPadrao(ultimosErros);
-
-                        if (desvioPadrao >= 0 && desvioPadrao <= LIMIAR_PLATO) {
-                            System.out.println(">>> PLATÔ DETECTADO! Desvio Padrão: " + desvioPadrao);
-
-                            // **** A LINHA CORRIGIDA ESTÁ AQUI ****
-                            TreinamentoController.AcaoPlato acao = treinamentoController.aguardarAcaoPlato().get();
-
-                            if (acao == TreinamentoController.AcaoPlato.PARAR) break;
-                            else if (acao == TreinamentoController.AcaoPlato.REDUZIR_TAXA) {
-                                taxaAprendizadoAtual *= 0.90;
-                                rede.setTaxaAprendizado(taxaAprendizadoAtual);
-                            }
-                            ultimosErros.clear();
-                        }
-                    }
-                }
-
-                // 5. Retornar os resultados
-                return new ResultadoTreinamento(rede, erroEpoca, epocaAtual, historicoErros);
+                System.out.println("Dividindo arquivo único:");
+                System.out.println("Instâncias de Treino: " + dadosTreinoFinal.getInstancias().size());
+                System.out.println("Instâncias de Teste: " + dadosTesteFinal.getInstancias().size());
             }
-        };
+            else {
+                // Modo Dois Arquivos: Apenas usa os dados carregados
+                dadosTreinoFinal = dadosCarregadoPrincipal;
+                dadosTesteFinal = dadosCarregadoTeste;
+            }
 
-        // --- 4. Configurar o que fazer quando a TAREFA terminar ---
-        tarefaTreinamento.setOnSucceeded(event -> {
-            fecharJanelaTreinamento();
-            ResultadoTreinamento resultado = tarefaTreinamento.getValue();
-            System.out.println("Treinamento Concluído!");
-            // Passa o 'dadosTesteFinal' para a janela de resultados
-            abrirJanelaResultados(resultado, dadosTesteFinal);
-        });
+            // Copia final das variáveis para usar dentro da Task
+            final double taxaAprendizadoFinal = taxaAprendizado;
+            final int numOcultaFinal = numOculta;
+            final int epocasFinal = epocas;
+            final double erroDesejadoFinal = erroDesejado;
 
-        tarefaTreinamento.setOnFailed(event -> {
-            fecharJanelaTreinamento();
-            Throwable e = tarefaTreinamento.getException();
-            exibirAlertaErro("Erro no Treinamento", "Ocorreu uma falha: " + e.getMessage());
-            e.printStackTrace();
-        });
 
-        // --- 5. Iniciar a Tarefa ---
-        abrirJanelaTreinamento();
-        new Thread(tarefaTreinamento).start();
+            // Criação da tarefa de Treinamento
+            Task<ResultadoTreinamento> tarefaTreinamento = new Task<>() {
+                @Override
+                protected ResultadoTreinamento call() throws Exception {
+                    double taxaAprendizadoAtual = taxaAprendizadoFinal;
+
+                    // Instancia a Rede Neural
+                    RedeNeural rede = new RedeNeural(
+                            dadosTreinoFinal.getNumeroDeAtributos(), // Usa o 'Final'
+                            numOcultaFinal,
+                            dadosTreinoFinal.getNumeroDeClasses(), // Usa o 'Final'
+                            funcao,
+                            taxaAprendizadoAtual,
+                            dadosTreinoFinal // Passa o 'Final' (ele contém o Min/Max correto)
+                    );
+
+                    // Loop de Treinamento (Épocas)
+                    int epocaAtual = 0;
+                    double erroEpoca = 1.0;
+                    List<Instancia> instanciasTreino = new ArrayList<>(dadosTreinoFinal.getInstancias()); // Usa o 'Final'
+                    List<Double> historicoErros = new ArrayList<>();
+
+                    LinkedList<Double> ultimosErros = new LinkedList<>();
+                    final int TAMANHO_JANELA_PLATO = 10;
+                    final double LIMIAR_PLATO = 0.00001;
+
+                    // Flag booleana para controlar o loop
+                    boolean treinamentoAtivo = true;
+
+                    while (epocaAtual < epocasFinal && erroEpoca > erroDesejadoFinal && treinamentoAtivo) {
+
+                        Collections.shuffle(instanciasTreino);
+                        double somaErrosQuadradicos = 0.0;
+                        for (Instancia inst : instanciasTreino) {
+                            List<Double> entradasNormalizadas = rede.normalizar(inst.getEntradas());
+                            List<Double> vetorAlvo = rede.getVetorAlvo(inst.getClasse());
+                            List<Double> saidasRede = rede.feedforward(entradasNormalizadas);
+                            rede.backpropagation(entradasNormalizadas, vetorAlvo);
+                            for (int i = 0; i < vetorAlvo.size(); i++) {
+                                double erro = vetorAlvo.get(i) - saidasRede.get(i);
+                                somaErrosQuadradicos += 0.5 * (erro * erro);
+                            }
+                        }
+
+                        epocaAtual++;
+                        erroEpoca = somaErrosQuadradicos / instanciasTreino.size();
+                        historicoErros.add(erroEpoca);
+
+                        // Atualizar a Ui de treinamento
+                        treinamentoController.atualizarStatus(epocaAtual, erroEpoca);
+
+                        // Logica de detecção de plato
+                        ultimosErros.add(erroEpoca);
+                        if (ultimosErros.size() > TAMANHO_JANELA_PLATO)
+                            ultimosErros.removeFirst();
+
+                        if (ultimosErros.size() == TAMANHO_JANELA_PLATO) {
+                            double desvioPadrao = calcularDesvioPadrao(ultimosErros);
+
+                            if (desvioPadrao >= 0 && desvioPadrao <= LIMIAR_PLATO) {
+                                System.out.println(">>> PLATÔ DETECTADO! Desvio Padrão: " + desvioPadrao);
+                                TreinamentoController.AcaoPlato acao = treinamentoController.aguardarAcaoPlato().get();
+
+                                if (acao == TreinamentoController.AcaoPlato.PARAR) {
+                                    treinamentoAtivo = false; // Define a flag como falsa em vez de 'break'
+                                }
+                                else if (acao == TreinamentoController.AcaoPlato.REDUZIR_TAXA) {
+                                    taxaAprendizadoAtual *= 0.90;
+                                    rede.setTaxaAprendizado(taxaAprendizadoAtual);
+                                }
+                                ultimosErros.clear();
+                            }
+                        }
+                    }
+                    // Retorna os resultados
+                    return new ResultadoTreinamento(rede, erroEpoca, epocaAtual, historicoErros);
+                }
+            };
+
+            // Configurar o que fazer quando a tarefa terminar
+            tarefaTreinamento.setOnSucceeded(event -> {
+                fecharJanelaTreinamento();
+                ResultadoTreinamento resultado = tarefaTreinamento.getValue();
+                System.out.println("Treinamento Concluído!");
+                // Passa o 'dadosTesteFinal' para a janela de resultados
+                abrirJanelaResultados(resultado, dadosTesteFinal);
+            });
+
+            tarefaTreinamento.setOnFailed(event -> {
+                fecharJanelaTreinamento();
+                Throwable e = tarefaTreinamento.getException();
+                exibirAlertaErro("Erro no Treinamento", "Ocorreu uma falha: " + e.getMessage());
+                e.printStackTrace();
+            });
+            abrirJanelaTreinamento();
+            new Thread(tarefaTreinamento).start();
+        }
     }
 
-    // --- Métodos Auxiliares ---
-
-    /**
-     * NOVO MÉTODO: Divide um Conjunto de Dados em Treino e Teste.
-     */
+    // Divide um Conjunto de Dados em Treino e Teste
     private Pair<ConjuntoDados, ConjuntoDados> splitDataSet(ConjuntoDados dadosCompletos, double porcentagemTreino) {
         // Pega os valores globais Mín, Máx e Classes
         List<Double> minimos = dadosCompletos.getMinimos();
@@ -344,7 +347,7 @@ public class MainController {
         List<Instancia> listaTreino = new ArrayList<>(todasInstancias.subList(0, pontoDivisao));
         List<Instancia> listaTeste = new ArrayList<>(todasInstancias.subList(pontoDivisao, todasInstancias.size()));
 
-        // Cria os novos ConjuntoDados usando o construtor que NÃO recalcula min/max
+        // Cria os novos ConjuntoDados usando o construtor que nao recalcula min/max
         ConjuntoDados dadosTreino = new ConjuntoDados(listaTreino, minimos, maximos, classes);
         ConjuntoDados dadosTeste = new ConjuntoDados(listaTeste, minimos, maximos, classes);
 
@@ -365,15 +368,15 @@ public class MainController {
             janelaTreinamento.initOwner(getJanelaPrincipal());
             janelaTreinamento.setResizable(false);
             janelaTreinamento.show();
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     private void fecharJanelaTreinamento() {
-        if (janelaTreinamento != null) {
+        if (janelaTreinamento != null)
             janelaTreinamento.close();
-        }
     }
 
     private void abrirJanelaResultados(ResultadoTreinamento resultado, ConjuntoDados dadosTeste) {
@@ -412,13 +415,10 @@ public class MainController {
     private void verificarSePodeIniciar() {
         // Lógica de verificação atualizada
         boolean pronto = false;
-        if (checkArquivoUnico.isSelected()) {
-            // Modo arquivo único: só precisa do principal
+        if (checkArquivoUnico.isSelected()) // Modo arquivo único: só precisa do principal
             pronto = (dadosCarregadoPrincipal != null);
-        } else {
-            // Modo dois arquivos: precisa dos dois
+        else // Modo dois arquivos: precisa dos dois
             pronto = (dadosCarregadoPrincipal != null && dadosCarregadoTeste != null);
-        }
         btnIniciar.setDisable(!pronto);
     }
 
@@ -435,13 +435,23 @@ public class MainController {
     }
 
     private double calcularDesvioPadrao(List<Double> lista) {
-        if (lista == null || lista.size() < 2) return 0.0;
-        double soma = 0.0;
-        for (double val : lista) soma += val;
-        double media = soma / lista.size();
-        double somaVariancia = 0.0;
-        for (double val : lista) somaVariancia += Math.pow(val - media, 2);
-        double variancia = somaVariancia / (lista.size() - 1);
-        return Math.sqrt(variancia);
+        double resultado = 0.0; // Valor padrão de retorno
+
+        // Se a lista for válida, calcula o desvio
+        if (lista != null && lista.size() >= 2) {
+            double soma = 0.0;
+            for (double val : lista)
+                soma += val;
+            double media = soma / lista.size();
+            double somaVariancia = 0.0;
+            for (double val : lista)
+                somaVariancia += Math.pow(val - media, 2);
+            double variancia = somaVariancia / (lista.size() - 1);
+
+            resultado = Math.sqrt(variancia); // Define o resultado
+        }
+
+        // Retorna o 'resultado' (seja 0.0 ou o valor calculado)
+        return resultado;
     }
 }

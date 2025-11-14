@@ -12,22 +12,15 @@ public class ConjuntoDados {
     private final List<Double> maximos;
     private final Set<String> classesUnicas;
 
-    /**
-     * Construtor principal: Calcula min/max e classes a partir da lista.
-     */
     public ConjuntoDados(List<Instancia> instancias) {
         this.instancias = new ArrayList<>(instancias);
         this.minimos = new ArrayList<>();
         this.maximos = new ArrayList<>();
-        this.classesUnicas = new TreeSet<>(); // TreeSet para manter em ordem alfabética
+        this.classesUnicas = new TreeSet<>();
 
         calcularMinMaxEClasses();
     }
 
-    /**
-     * NOVO CONSTRUTOR: Apenas recebe os valores, não calcula.
-     * Usado para criar os conjuntos de treino/teste divididos.
-     */
     public ConjuntoDados(List<Instancia> instancias, List<Double> minimos, List<Double> maximos, Set<String> classesUnicas) {
         this.instancias = instancias;
         this.minimos = minimos;
@@ -35,31 +28,25 @@ public class ConjuntoDados {
         this.classesUnicas = classesUnicas;
     }
 
-    /**
-     * Método privado para inicializar os valores min/max e as classes.
-     */
+    // Metodo privado para inicializar os valores min/max e as classes
     private void calcularMinMaxEClasses() {
-        if (instancias.isEmpty()) {
-            return;
-        }
-
-        int numAtributos = instancias.get(0).getNumeroDeEntradas();
-        for (int i = 0; i < numAtributos; i++) {
-            minimos.add(Double.MAX_VALUE);
-            maximos.add(Double.MIN_VALUE);
-        }
-
-        for (Instancia inst : instancias) {
-            classesUnicas.add(inst.getClasse());
+        if (!instancias.isEmpty()) {
+            int numAtributos = instancias.get(0).getNumeroDeEntradas();
             for (int i = 0; i < numAtributos; i++) {
-                double valor = inst.getEntradas().get(i);
-                if (valor < minimos.get(i)) minimos.set(i, valor);
-                if (valor > maximos.get(i)) maximos.set(i, valor);
+                minimos.add(Double.MAX_VALUE);
+                maximos.add(Double.MIN_VALUE);
+            }
+
+            for (Instancia inst : instancias) {
+                classesUnicas.add(inst.getClasse());
+                for (int i = 0; i < numAtributos; i++) {
+                    double valor = inst.getEntradas().get(i);
+                    if (valor < minimos.get(i)) minimos.set(i, valor);
+                    if (valor > maximos.get(i)) maximos.set(i, valor);
+                }
             }
         }
     }
-
-    // --- Getters ---
 
     public List<Instancia> getInstancias() {
         return instancias;
@@ -73,7 +60,6 @@ public class ConjuntoDados {
         return maximos;
     }
 
-    // NOVO GETTER (necessário para o split)
     public Set<String> getClassesUnicas() {
         return classesUnicas;
     }

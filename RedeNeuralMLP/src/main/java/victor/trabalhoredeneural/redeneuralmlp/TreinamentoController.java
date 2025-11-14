@@ -23,33 +23,25 @@ public class TreinamentoController {
     @FXML
     private VBox boxPlato;
 
-    // Um "Future" é uma promessa de que daremos uma resposta.
-    // A thread de treino vai PAUSAR e esperar por esta resposta.
+    // Um "Future" é uma promessa de que vai dar alguma uma resposta
+    // A thread de treino vai pausar e esperar por esta resposta
     private CompletableFuture<AcaoPlato> acaoPlatoFuture;
 
-    /**
-     * Atualiza os labels de status (Época e Erro).
-     * Este método é chamado PELA THREAD DE TREINAMENTO.
-     */
+    //Atualiza os labels de status (Época e Erro), onde este metodo e chamado pela thread de treinamento
     public void atualizarStatus(int epoca, double erro) {
         // Platform.runLater é OBRIGATÓRIO para atualizar a UI
-        // a partir de outra thread.
+        // a partir de outra thread
         Platform.runLater(() -> {
             lblEpocaAtual.setText(String.valueOf(epoca));
             lblErroAtual.setText(String.format("%.10f", erro));
         });
     }
 
-    /**
-     * Mostra a caixa de diálogo do platô e espera uma resposta.
-     * @return Um "Future" que será completado com a ação do usuário.
-     */
+    //Mostra a caixa de diálogo do platô e espera uma resposta
     public CompletableFuture<AcaoPlato> aguardarAcaoPlato() {
         acaoPlatoFuture = new CompletableFuture<>();
-
         // Mostra a caixa de diálogo na UI thread
         Platform.runLater(() -> boxPlato.setVisible(true));
-
         return acaoPlatoFuture;
     }
 

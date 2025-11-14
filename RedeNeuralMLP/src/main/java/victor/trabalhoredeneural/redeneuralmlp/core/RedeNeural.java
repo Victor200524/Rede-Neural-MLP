@@ -1,7 +1,6 @@
 package victor.trabalhoredeneural.redeneuralmlp.core;
 
 import victor.trabalhoredeneural.redeneuralmlp.model.ConjuntoDados;
-import victor.trabalhoredeneural.redeneuralmlp.model.Instancia;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,16 +26,6 @@ public class RedeNeural {
     private final List<Double> minimos;
     private final List<Double> maximos;
 
-    /**
-     * Construtor da Rede Neural.
-     * @param numEntrada Número de neurônios de entrada (ex: 6)
-     * @param numOculta Número de neurônios na camada oculta
-     * @param numSaida Número de neurônios na camada de saída (ex: 5 classes)
-     * @param funcaoAtivacao O enum da função de ativação (Linear, Logistica, etc.)
-     * @param taxaAprendizado O 'N' (eta)
-     * @param dadosTreino O conjunto de dados de treino, usado para pegar os
-     * min/max (para normalização) e a lista de classes.
-     */
     public RedeNeural(int numEntrada, int numOculta, int numSaida,
                       FuncaoAtivacao funcaoAtivacao, double taxaAprendizado,
                       ConjuntoDados dadosTreino) {
@@ -67,42 +56,34 @@ public class RedeNeural {
         System.out.println("Mapa de classes criado: " + this.mapaClasses);
     }
 
-    /**
-     * Etapa de Feedforward: Executa uma entrada pela rede.
-     * @param entradas A lista de entradas (já normalizadas).
-     * @return A lista de saídas da camada de saída.
-     */
+    //Executa uma entrada pela rede
     public List<Double> feedforward(List<Double> entradas) {
-        // 1. Passa pela camada oculta
+        //Passa pela camada oculta
         List<Double> saidasOculta = camadaOculta.calcularSaidas(entradas, funcaoAtivacao);
 
-        // 2. Passa pela camada de saída
+        //Passa pela camada de saída
         List<Double> saidasFinal = camadaSaida.calcularSaidas(saidasOculta, funcaoAtivacao);
 
         return saidasFinal;
     }
 
-    /**
-     * Etapa de Backpropagation: Calcula erros e atualiza pesos.
-     * @param entradas A lista de entradas (já normalizadas).
-     * @param vetorAlvo O vetor de saída desejado (ex: [1, 0, 0]).
-     */
+    //Calcula erros e atualiza pesos
     public void backpropagation(List<Double> entradas, List<Double> vetorAlvo) {
 
-        // 1. Calcular Gradientes (Deltas) da Camada de Saída
+        //Calcular Gradientes (Deltas) da Camada de Saída
         for (int i = 0; i < camadaSaida.getNeuronios().size(); i++) {
             Neuronio neuronio = camadaSaida.getNeuronio(i);
             double alvo = vetorAlvo.get(i);
             neuronio.calcularGradienteSaida(alvo, funcaoAtivacao);
         }
 
-        // 2. Calcular Gradientes (Deltas) da Camada Oculta
+        //Calcular Gradientes da Camada Oculta
         for (int i = 0; i < camadaOculta.getNeuronios().size(); i++) {
             Neuronio neuronio = camadaOculta.getNeuronio(i);
             neuronio.calcularGradienteOculta(camadaSaida, i, funcaoAtivacao);
         }
 
-        // 3. Atualizar Pesos da Camada de Saída
+        // Atualizar Pesos da Camada de Saída
         // A entrada para a camada de saída são as saídas da camada oculta
         List<Double> saidasOculta = new ArrayList<>();
         for (Neuronio n : camadaOculta.getNeuronios()) {
@@ -113,19 +94,15 @@ public class RedeNeural {
             neuronio.atualizarPesos(saidasOculta, taxaAprendizado);
         }
 
-        // 4. Atualizar Pesos da Camada Oculta
+        // Atualizar Pesos da Camada Oculta
         // A entrada para a camada oculta são as entradas da rede
         for (Neuronio neuronio : camadaOculta.getNeuronios()) {
             neuronio.atualizarPesos(entradas, taxaAprendizado);
         }
     }
 
-    /**
-     * Normaliza uma lista de valores de entrada.
-     * Usa os Mínimos e Máximos guardados do conjunto de treino.
-     * @param entradas A lista de entradas "cruas".
-     * @return A lista de entradas normalizadas (0 a 1).
-     */
+    // Normaliza uma lista de valores de entrada, usa os Mínimos e Máximos guardados do conjunto de treino.
+
     public List<Double> normalizar(List<Double> entradas) {
         List<Double> entradasNormalizadas = new ArrayList<>();
         for (int i = 0; i < entradas.size(); i++) {
@@ -133,42 +110,27 @@ public class RedeNeural {
             double max = maximos.get(i);
             double valor = entradas.get(i);
 
-            // --- INÍCIO DA CORREÇÃO DO BUG ---
-
             double denominador = max - min;
             double normalizado;
 
             if (denominador == 0) {
-                // Se max == min (ou seja, todos os valores da coluna são iguais),
-                // definimos como 0.0 para evitar a divisão por zero (NaN).
+                // Se max == min (ou seja, todos os valores da coluna são iguais)
+                // definimos como 0.0 para evitar a divisão por zero (NaN)
                 normalizado = 0.0;
-            } else {
-                // Fórmula de Normalização: (Valor - Min) / (Max - Min)
-                normalizado = (valor - min) / denominador;
             }
-
-            // --- FIM DA CORREÇÃO DO BUG ---
-
+            else // Fórmula de Normalização: (Valor - Min) / (Max - Min)
+                normalizado = (valor - min) / denominador;
             entradasNormalizadas.add(normalizado);
         }
         return entradasNormalizadas;
     }
 
-    /**
-     * Converte um nome de classe (ex: "CA") no vetor alvo (ex: [1, 0, 0]).
-     * @param classe O nome da classe.
-     * @return O vetor alvo.
-     */
+    // Converte um nome de classe (ex: "CA") no vetor alvo (ex: [1, 0, 0])
     public List<Double> getVetorAlvo(String classe) {
         return mapaClasses.get(classe);
     }
 
-    /**
-     * Retorna o nome da classe com base na saída da rede.
-     * (Usado para testes)
-     * @param saidaDaRede A lista de saídas (ex: [0.1, 0.8, 0.05])
-     * @return O nome da classe (ex: "CB")
-     */
+    //Retorna o nome da classe com base na saída da rede
     public String getClassificacao(List<Double> saidaDaRede) {
         int indiceMax = 0;
         double valorMax = -1;

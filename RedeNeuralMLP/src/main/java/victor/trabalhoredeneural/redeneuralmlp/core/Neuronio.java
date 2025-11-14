@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Representa um único neurônio na rede.
- * Cada neurônio mantém sua lista de pesos, seu último valor de saída
- * e seu gradiente de erro (delta) para o backpropagation.
+ * Representa um unico neuronio na rede
+ * Cada neuronio mantem sua lista de pesos, seu ultimo valor de saida
+ * e seu gradiente de erro (delta) para o backpropagation
  */
 public class Neuronio {
 
@@ -15,40 +15,26 @@ public class Neuronio {
     private double saida;             // Última saída calculada (f(net))
     private double gradiente;         // Gradiente de erro (delta / δ)
 
-    /**
-     * Construtor para criar um neurônio.
-     * @param numEntradas O número de entradas que este neurônio receberá
-     * (sem contar o bias).
-     */
     public Neuronio(int numEntradas) {
         this.pesos = new ArrayList<>();
         Random rand = new Random();
 
         // Inicializa os pesos (numEntradas + 1 para o bias) com valores aleatórios pequenos
-        // O peso 0 (this.pesos.get(0)) será o peso do BIAS.
+        // O peso 0 (this.pesos.get(0)) será o peso do BIAS
         for (int i = 0; i <= numEntradas; i++) {
             // Valores aleatórios entre -0.5 e +0.5
             pesos.add(rand.nextDouble() - 0.5);
         }
     }
 
-    /**
-     * Etapa de Feedforward: Calcula a saída do neurônio.
-     * @param entradas A lista de entradas da camada anterior.
-     * @param funcao A função de ativação a ser usada.
-     * @return A saída calculada (f(net)).
-     */
+    //Etapa de Feedforward: Calcula a saída do neurônio
     public double calcularSaida(List<Double> entradas, FuncaoAtivacao funcao) {
         double net = calcularNet(entradas);
         this.saida = funcao.ativar(net); // Armazena a saída
         return this.saida;
     }
 
-    /**
-     * Calcula o somatório ponderado (net).
-     * @param entradas A lista de entradas.
-     * @return O valor de 'net'.
-     */
+    //Calcula o somatório ponderado
     private double calcularNet(List<Double> entradas) {
         // Começa com o peso do bias (multiplicado por uma entrada constante de 1.0)
         double net = pesos.get(0); // peso_bias * 1.0
@@ -60,11 +46,7 @@ public class Neuronio {
         return net;
     }
 
-    /**
-     * Etapa de Backpropagation: Calcula o gradiente (delta) para neurônios da CAMADA DE SAÍDA.
-     * @param valorDesejado O valor alvo (ex: 1.0 ou 0.0) para este neurônio.
-     * @param funcao A função de ativação que foi usada.
-     */
+    //Calcula o gradiente (delta) para neurônios da camada de saída
     public void calcularGradienteSaida(double valorDesejado, FuncaoAtivacao funcao) {
         // Fórmula: (Desejado - Saida) * f'(net)
         // Onde f'(net) é calculado usando a 'saida' (f(net))
@@ -72,12 +54,7 @@ public class Neuronio {
         this.gradiente = erro * funcao.derivada(this.saida);
     }
 
-    /**
-     * Etapa de Backpropagation: Calcula o gradiente (delta) para neurônios da CAMADA OCULTA.
-     * @param camadaSeguinte A camada da frente (ex: camada de saída).
-     * @param indiceNeuronio O índice deste neurônio (para saber qual peso pegar na camada da frente).
-     * @param funcao A função de ativação que foi usada.
-     */
+    //Etapa de Backpropagation: Calcula o gradiente (delta) para neurônios da camada oculta
     public void calcularGradienteOculta(Camada camadaSeguinte, int indiceNeuronio, FuncaoAtivacao funcao) {
         // Fórmula: (Σ (gradiente_seguinte * peso_correspondente)) * f'(net)
 
@@ -91,15 +68,11 @@ public class Neuronio {
         this.gradiente = somaGradientesPonderados * funcao.derivada(this.saida);
     }
 
-    /**
-     * Etapa de Backpropagation: Atualiza todos os pesos deste neurônio.
-     * @param entradas As entradas que este neurônio recebeu na etapa de feedforward.
-     * @param taxaAprendizado O 'N' (eta) definido pelo usuário.
-     */
+    //Atualiza todos os pesos deste neurônio
     public void atualizarPesos(List<Double> entradas, double taxaAprendizado) {
         // Fórmula: novo_peso = peso_antigo + (N * gradiente * entrada)
 
-        // 1. Atualiza o peso do Bias (entrada é 1.0)
+        //Atualiza o peso do Bias (entrada é 1.0)
         double novoPesoBias = pesos.get(0) + (taxaAprendizado * this.gradiente * 1.0);
         pesos.set(0, novoPesoBias);
 
@@ -110,8 +83,6 @@ public class Neuronio {
             pesos.set(i, novoPeso);
         }
     }
-
-    // --- Getters ---
 
     public double getSaida() {
         return saida;

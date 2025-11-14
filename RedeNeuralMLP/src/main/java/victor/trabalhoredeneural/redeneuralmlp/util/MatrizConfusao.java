@@ -8,10 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-/**
- * Calcula e armazena os dados da Matriz de Confusão.
- * Testa a rede treinada contra um conjunto de dados de teste.
- */
+//Calcula e armazena os dados da Matriz de Confusão, testa a rede treinada contra um conjunto de dados de teste.
 public class MatrizConfusao {
 
     // A matriz é um Mapa onde a Chave é a Classe Real (ex: "CA")
@@ -21,16 +18,11 @@ public class MatrizConfusao {
     private final Map<String, Map<String, Integer>> matriz;
     private final List<String> listaClasses; // Lista ordenada de classes (para as colunas/linhas)
 
-    /**
-     * Construtor que gera a matriz de confusão.
-     * @param rede A rede neural já treinada.
-     * @param dadosTeste O conjunto de dados para teste.
-     */
     public MatrizConfusao(RedeNeural rede, ConjuntoDados dadosTeste) {
         this.matriz = new TreeMap<>(); // TreeMap para manter as linhas (Classes Reais) ordenadas
         this.listaClasses = dadosTeste.getListaClassesUnicas(); // Pega "CA", "CB", ...
 
-        // 1. Inicializa a matriz com zeros
+        //Inicializa a matriz com zeros
         for (String classeReal : listaClasses) {
             Map<String, Integer> predicoes = new TreeMap<>(); // TreeMap para manter as colunas ordenadas
             for (String classePredita : listaClasses) {
@@ -39,20 +31,16 @@ public class MatrizConfusao {
             matriz.put(classeReal, predicoes);
         }
 
-        // 2. Preenche a matriz testando cada instância
+        // Preenche a matriz testando cada instância
         for (Instancia inst : dadosTeste.getInstancias()) {
             String classeReal = inst.getClasse();
-
-            // a. Normaliza as entradas de teste (usando min/max do TREINO)
+            // Normaliza as entradas de teste (usando min/max do TREINO)
             List<Double> entradasNormalizadas = rede.normalizar(inst.getEntradas());
-
-            // b. Faz o feedforward (predição)
+            // Faz o feedforward (predição)
             List<Double> saidaRede = rede.feedforward(entradasNormalizadas);
-
-            // c. Converte a saída (ex: [0.1, 0.8]) para um nome de classe (ex: "CB")
+            // Converte a saída (ex: [0.1, 0.8]) para um nome de classe (ex: "CB")
             String classePredita = rede.getClassificacao(saidaRede);
-
-            // d. Incrementa o contador na matriz
+            // Incrementa o contador na matriz
             // Pega a linha (classeReal), depois a coluna (classePredita) e soma 1
             Map<String, Integer> linha = matriz.get(classeReal);
             int contagemAtual = linha.get(classePredita);
@@ -60,31 +48,17 @@ public class MatrizConfusao {
         }
     }
 
-    // --- Getters ---
-
-    /**
-     * Retorna a lista ordenada de classes.
-     * Usado para criar as colunas e linhas da tabela na UI.
-     * @return Lista de nomes de classes.
-     */
+    // Retorna a lista ordenada de classes, usado para criar as colunas e linhas da tabela na UI
     public List<String> getListaClasses() {
         return listaClasses;
     }
 
-    /**
-     * Retorna a matriz de confusão completa.
-     * @return O mapa da matriz.
-     */
+    // Retorna a matriz de confusão completa.
     public Map<String, Map<String, Integer>> getMatriz() {
         return matriz;
     }
 
-    /**
-     * Retorna o valor de uma célula específica.
-     * @param classeReal A classe da linha.
-     * @param classePredita A classe da coluna.
-     * @return A contagem de predições.
-     */
+    // Retorna o valor de uma célula específica
     public int getValor(String classeReal, String classePredita) {
         return matriz.get(classeReal).get(classePredita);
     }
